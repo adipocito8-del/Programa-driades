@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Driade - Vigilancia de incendios, Coto de la Pesadilla</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; background: #fff; color: #222; max-width: 800px; margin: 0 auto; padding: 16px; line-height: 1.4; }
+  h1 { font-size: 24px; margin-bottom: 2px; }
+  h2 { font-size: 18px; margin-top: 24px; border-bottom: 1px solid #999; padding-bottom: 4px; }
+  .sub { color: #666; font-size: 14px; margin-top: 0; }
+  .cabecera { border-bottom: 2px solid #222; padding-bottom: 8px; margin-bottom: 16px; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0 16px 0; }
+  th, td { border: 1px solid #999; padding: 6px 8px; text-align: left; font-size: 14px; }
+  th { background: #eee; }
+  .menu { margin: 16px 0; }
+  .menu button { padding: 6px 14px; border: 1px solid #666; background: #eee; cursor: pointer; font-size: 14px; }
+  .menu button.activo { background: #222; color: #fff; }
+  .panel { display: none; }
+  .panel.activo { display: block; }
+  .alerta { color: #b00; font-weight: bold; }
+  .aviso { color: #a60; font-weight: bold; }
+  .ok { color: #070; }
+  .caja { border: 1px solid #999; padding: 8px 12px; margin-bottom: 10px; }
+  .caja.activa { border: 2px solid #b00; }
+  .grafica { height: 220px; margin-bottom: 20px; }
+  iframe { width: 100%; height: 360px; border: 1px solid #999; }
+  label { display: block; margin-top: 10px; font-size: 14px; font-weight: bold; }
+  input[type=text], input[type=tel], input[type=datetime-local], select, textarea { width: 100%; box-sizing: border-box; padding: 6px; border: 1px solid #666; font-family: inherit; font-size: 14px; }
+  textarea { height: 100px; }
+  button.enviar { margin-top: 14px; padding: 8px 18px; border: 1px solid #222; background: #222; color: #fff; cursor: pointer; font-size: 14px; }
+  button.sec { padding: 5px 10px; border: 1px solid #666; background: #eee; cursor: pointer; font-size: 13px; }
+  .emergencia { border: 2px solid #b00; padding: 8px 12px; margin-bottom: 12px; }
+  pre { background: #f4f4f4; border: 1px solid #999; padding: 10px; white-space: pre-wrap; font-size: 13px; }
+  #resultado { display: none; }
+  small { color: #666; }
+</style>
+</head>
+<body>
+
+<div class="cabecera">
+  <h1>Driade</h1>
+  <p class="sub">Vigilancia de incendios - Coto de la Pesadilla (San Sebastián de los Reyes, Madrid)</p>
+  <p>Estado: <span class="aviso">riesgo de incendio ALTO</span> | Sensor: <span class="ok">online</span> | Hora: <span id="reloj"></span></p>
+</div>
+
+<h2>Resumen actual</h2>
+<table>
+  <tr><th>Temperatura</th><th>Humedad</th><th>Viento máx.</th><th>Índice de incendio</th></tr>
+  <tr>
+    <td>28.4 °C (+2.1° respecto a ayer)</td>
+    <td>41 % (-8%, riesgo moderado)</td>
+    <td>34 km/h (ráfagas)</td>
+    <td class="aviso">ALTO</td>
+  </tr>
+</table>
+
+<div class="menu">
+  <button class="activo" onclick="cambiar('mapa', this)">Mapa</button>
+  <button onclick="cambiar('riesgo', this)">Riesgo de incendio</button>
+  <button onclick="cambiar('datos', this)">Datos</button>
+  <button onclick="cambiar('avisar', this)">Avisar de un incendio</button>
+</div>
+
+<!-- MAPA -->
+<div id="panel-mapa" class="panel activo">
+  <h2>Mapa del Coto de la Pesadilla</h2>
+  <iframe src="https://www.openstreetmap.org/export/embed.html?bbox=-3.66%2C40.58%2C-3.57%2C40.64&amp;layer=mapnik&amp;marker=40.6120%2C-3.6163"></iframe>
+  <p>
+    Punto marcado: monte El Toro, en la finca Pesadilla (40.6120 N, 3.6163 O), según el vértice geodésico del IGN.
+    <small>El sensor se sitúa en este punto; el coto ocupa también las zonas de alrededor.</small>
+  </p>
+  <p><a href="https://www.openstreetmap.org/?mlat=40.6120&amp;mlon=-3.6163#map=14/40.6120/-3.6163" target="_blank">Ver mapa en grande</a></p>
+
+  <h2>Lecturas en tiempo real</h2>
+  <table>
+    <tr><th>Parámetro</th><th>Valor</th></tr>
+    <tr><td>Temperatura</td><td>28.4 °C</td></tr>
+    <tr><td>Humedad relativa</td><td>41 %</td></tr>
+    <tr><td>Viento</td><td>34 km/h</td></tr>
+    <tr><td>Calidad del aire (humo)</td><td>ICA 76</td></tr>
+    <tr><td>Índice de incendio</td><td class="aviso">ALTO</td></tr>
+  </table>
+</div>
+
+<!-- RIESGO -->
+<div id="panel-riesgo" class="panel">
+  <h2>Alertas de incendio</h2>
+
+  <div class="caja activa">
+    <strong class="alerta">[ACTIVA] Riesgo de incendio ALTO</strong><br>
+    32 °C registrados durante más de 2 h. Humedad por debajo del 30% y viento con ráfagas de hasta 34 km/h.<br>
+    <small>Hace 47 minutos - Monitorizado</small>
+  </div>
+
+  <h2>Parámetros que influyen en el riesgo</h2>
+  <table>
+    <tr><th>Parámetro</th><th>Valor</th><th>Efecto</th></tr>
+    <tr><td>Temperatura</td><td>28.4 °C</td><td>Seca la vegetación, aumenta el riesgo</td></tr>
+    <tr><td>Humedad relativa</td><td>41 %</td><td>Baja, la vegetación se inflama con facilidad</td></tr>
+    <tr><td>Viento</td><td>34 km/h</td><td>Propagaría el fuego muy deprisa</td></tr>
+    <tr><td>Calidad del aire</td><td>ICA 76</td><td>Una subida brusca puede indicar humo</td></tr>
+  </table>
+
+  <h2>Recomendaciones</h2>
+  <ol>
+    <li>No encender fuego, barbacoas ni hogueras en el monte.</li>
+    <li>No tirar colillas ni cristales.</li>
+    <li>No aparcar vehículos sobre hierba seca (el tubo de escape puede prenderla).</li>
+    <li>Si ves humo o fuego, avisa cuanto antes desde la pestaña "Avisar de un incendio" o llamando al 112.</li>
+  </ol>
+</div>
+
+<!-- DATOS -->
+<div id="panel-datos" class="panel">
+  <h2>Temperatura - últimas 24h (°C)</h2>
+  <div class="grafica"><canvas id="gTemp"></canvas></div>
+
+  <h2>Humedad - últimas 24h (%)</h2>
+  <div class="grafica"><canvas id="gHum"></canvas></div>
+
+  <h2>Viento - últimas 24h (km/h)</h2>
+  <div class="grafica"><canvas id="gViento"></canvas></div>
+</div>
+
+<!-- AVISAR -->
+<div id="panel-avisar" class="panel">
+  <h2>Avisar de un incendio o de un riesgo</h2>
+
+  <div class="emergencia">
+    <strong class="alerta">Si hay fuego o peligro ahora mismo, llama primero.</strong><br>
+    Emergencias: <a href="tel:112"><strong>112</strong></a> |
+    Guardia Civil: <a href="tel:062"><strong>062</strong></a><br>
+    <small>Esta página no envía avisos automáticamente. Rellena el formulario para preparar el mensaje y dáselo a los servicios de emergencia.</small>
+  </div>
+
+  <form id="formulario" onsubmit="return preparar(event)">
+    <label for="tipo">Qué has visto</label>
+    <select id="tipo">
+      <option>Humo</option>
+      <option>Fuego / llamas visibles</option>
+      <option>Hoguera o barbacoa encendida</option>
+      <option>Persona tirando colillas o cohetes</option>
+      <option>Vehículo en zona de hierba seca</option>
+      <option>Otro motivo</option>
+    </select>
+
+    <label for="lugar">Dónde (referencias, camino, coordenadas...)</label>
+    <input type="text" id="lugar" placeholder="Ej: junto al camino que sube al cerro del Toro" required>
+    <button type="button" class="sec" onclick="usarUbicacion()">Usar mi ubicación actual</button>
+    <span id="estadoGps"><small></small></span>
+
+    <label for="hora">Cuándo lo has visto</label>
+    <input type="datetime-local" id="hora" required>
+
+    <label for="descripcion">Explica lo que ha pasado</label>
+    <textarea id="descripcion" placeholder="Tamaño aproximado, color del humo, hacia dónde va, si hay gente cerca..." required></textarea>
+
+    <label for="nombre">Tu nombre (opcional)</label>
+    <input type="text" id="nombre">
+
+    <label for="telefono">Tu teléfono (opcional, por si necesitan llamarte)</label>
+    <input type="tel" id="telefono">
+
+    <button type="submit" class="enviar">Preparar aviso</button>
+  </form>
+
+  <div id="resultado">
+    <h2>Aviso preparado</h2>
+    <pre id="textoAviso"></pre>
+    <button class="sec" onclick="copiar()">Copiar texto</button>
+    <span id="estadoCopia"><small></small></span>
+    <p>Ahora llama al <a href="tel:112">112</a> o al <a href="tel:062">062</a> y dales esta información.</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+  // Cambiar de pestaña
+  function cambiar(id, boton) {
+    document.querySelectorAll('.panel').forEach(function (p) { p.classList.remove('activo'); });
+    document.querySelectorAll('.menu button').forEach(function (b) { b.classList.remove('activo'); });
+    document.getElementById('panel-' + id).classList.add('activo');
+    boton.classList.add('activo');
+    if (id === 'datos') crearGraficas();
+  }
+
+  // Reloj
+  function actualizarReloj() {
+    document.getElementById('reloj').textContent = new Date().toLocaleTimeString('es-ES');
+  }
+  actualizarReloj();
+  setInterval(actualizarReloj, 1000);
+
+  // Poner la hora actual por defecto en el formulario
+  (function () {
+    var ahora = new Date();
+    ahora.setMinutes(ahora.getMinutes() - ahora.getTimezoneOffset());
+    document.getElementById('hora').value = ahora.toISOString().slice(0, 16);
+  })();
+
+  // Ubicación del usuario
+  function usarUbicacion() {
+    var estado = document.getElementById('estadoGps');
+    if (!navigator.geolocation) {
+      estado.textContent = ' Tu navegador no permite obtener la ubicación.';
+      return;
+    }
+    estado.textContent = ' Buscando ubicación...';
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      var lat = pos.coords.latitude.toFixed(5);
+      var lon = pos.coords.longitude.toFixed(5);
+      document.getElementById('lugar').value = 'Coordenadas GPS: ' + lat + ', ' + lon;
+      estado.textContent = ' Ubicación añadida.';
+    }, function () {
+      estado.textContent = ' No se pudo obtener la ubicación. Escríbela a mano.';
+    });
+  }
+
+  // Montar el texto del aviso
+  function preparar(e) {
+    e.preventDefault();
+    var hora = new Date(document.getElementById('hora').value).toLocaleString('es-ES');
+    var nombre = document.getElementById('nombre').value || 'No indicado';
+    var tel = document.getElementById('telefono').value || 'No indicado';
+
+    var texto =
+      'AVISO - POSIBLE INCENDIO FORESTAL\n' +
+      'Zona: Coto de la Pesadilla (San Sebastián de los Reyes, Madrid)\n' +
+      'Tipo: ' + document.getElementById('tipo').value + '\n' +
+      'Lugar: ' + document.getElementById('lugar').value + '\n' +
+      'Hora: ' + hora + '\n' +
+      'Descripción: ' + document.getElementById('descripcion').value + '\n' +
+      'Informante: ' + nombre + '\n' +
+      'Teléfono: ' + tel + '\n' +
+      'Condiciones del sensor Driade: 28.4 °C, 41 % humedad, viento 34 km/h, riesgo de incendio ALTO';
+
+    document.getElementById('textoAviso').textContent = texto;
+    document.getElementById('resultado').style.display = 'block';
+    document.getElementById('resultado').scrollIntoView();
+    return false;
+  }
+
+  function copiar() {
+    var texto = document.getElementById('textoAviso').textContent;
+    var estado = document.getElementById('estadoCopia');
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(texto).then(function () {
+        estado.textContent = ' Copiado.';
+      }, function () {
+        estado.textContent = ' No se pudo copiar, selecciona el texto a mano.';
+      });
+    } else {
+      estado.textContent = ' Selecciona el texto y cópialo a mano.';
+    }
+  }
+
+  // Gráficas (solo se crean una vez)
+  var creadas = false;
+  function crearGraficas() {
+    if (creadas) return;
+    creadas = true;
+
+    var horas = [];
+    for (var i = 0; i < 24; i++) horas.push(i + 'h');
+
+    var temp   = [18,17,17,18,20,22,24,26,27,28,29,31,32,34,33,32,31,30,29,28,27,26,24,22];
+    var hum    = [70,72,71,69,65,60,55,50,46,43,41,38,35,30,28,30,32,34,36,38,40,42,45,50];
+    var viento = [5,4,3,4,6,8,10,12,14,16,18,22,25,28,34,32,30,28,25,22,18,15,12,8];
+
+    function linea(canvas, datos) {
+      new Chart(document.getElementById(canvas), {
+        type: 'line',
+        data: { labels: horas, datasets: [{ data: datos, borderColor: '#222', borderWidth: 1.5, pointRadius: 2, fill: false }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      });
+    }
+
+    linea('gTemp', temp);
+    linea('gHum', hum);
+    linea('gViento', viento);
+  }
+</script>
+</body>
+</html>
